@@ -1,58 +1,61 @@
-<script>
-        // 1. Telegram User Initialization safely
-        try {
-            if (window.Telegram && window.Telegram.WebApp) {
-                window.Telegram.WebApp.ready();
-                const tgUser = window.Telegram.WebApp.initDataUnsafe?.user;
-                if (tgUser && tgUser.id) {
-                    document.getElementById('user-profile').innerHTML = `Welcome, <b>${tgUser.first_name || 'Player'}</b>`;
-                } else {
-                    document.getElementById('user-profile').innerHTML = `Welcome, <b>Guest Player</b> (Telegram WebApp)`;
-                }
-            } else {
-                document.getElementById('user-profile').innerHTML = `Welcome, <b>Browser User</b>`;
-            }
-        } catch (e) {
-            document.getElementById('user-profile').innerHTML = `Welcome, <b>Player</b>`;
-        }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Indus110 Gaming</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: Arial, sans-serif; background: #0b0f19; color: #fff; margin: 0; padding: 15px; }
+        h1 { text-align: center; color: #38bdf8; font-size: 20px; margin-bottom: 10px; }
+        .user-info { background: #1e293b; padding: 10px; border-radius: 8px; text-align: center; margin-bottom: 15px; font-size: 13px; color: #cbd5e1; border: 1px solid #334155; }
+        .banner { background: linear-gradient(135deg, #3b82f6, #1d4ed8); padding: 12px; border-radius: 10px; text-align: center; margin-bottom: 15px; font-size: 13px; font-weight: bold; }
+        #games-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+        .game-card { background: #1e293b; border-radius: 10px; padding: 12px; text-align: center; cursor: pointer; border: 1px solid #334155; }
+        .game-card:hover { border-color: #3b82f6; }
+        .game-icon { background: #334155; height: 55px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 24px; margin-bottom: 8px; }
+        .game-card h4 { font-size: 13px; margin: 4px 0; color: #f8fafc; }
+        .game-card p { font-size: 11px; color: #94a3b8; margin: 0 0 6px 0; }
+        .badge { background: #22c55e; color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: bold; display: inline-block; }
+    </style>
+</head>
+<body>
 
-        // 2. Supabase Setup & Fetch (Without category restriction for instant display)
+    <h1>Indus110 Gaming</h1>
+    <div id="user-profile" class="user-info">Welcome, Player</div>
+    <div class="banner">🎁 Enjoy Daily Bonus & Get 800 PKR per Referral!</div>
+    <div id="games-grid">Loading games...</div>
+
+    <script>
+        // Telegram User Init
+        try {
+            window.Telegram.WebApp.ready();
+            const user = window.Telegram.WebApp.initDataUnsafe?.user;
+            if (user && user.first_name) {
+                document.getElementById('user-profile').innerHTML = `Welcome, <b>${user.first_name}</b>`;
+            }
+        } catch (e) {}
+
+        // Supabase Load
         const SUPABASE_URL = 'https://rnmjchixmiyqhciafsfk.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJubWpjaGl4bWl5cWhjaWFmc2ZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA5NTA2MjAsImV4cCI6MjEwNjUyNjYyMH0.C_ics2YhbhaJjFHG38RV_wJROmgfUhLldqGeZdpv76Q';
         
-        let supabaseClient = null;
-        try {
-            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        } catch (err) {
-            console.error("Supabase init error:", err);
-        }
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        async function fetchGames() {
+        async function loadGames() {
             const grid = document.getElementById('games-grid');
-            grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #94a3b8;">Fetching catalog...</p>';
-
-            if (!supabaseClient) {
-                grid.innerHTML = '<p style="color: red; text-align: center;">Database connection failed.</p>';
-                return;
-            }
-
             try {
-                // Fetch all active games without category filter
-                const { data: games, error } = await supabaseClient
-                    .from('games')
-                    .select('*')
-                    .eq('is_active', true);
-
+                const { data, error } = await supabase.from('games').select('*');
                 if (error) throw error;
 
-                grid.innerHTML = '';
-
-                if (!games || games.length === 0) {
-                    grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #94a3b8;">No games found in database.</p>';
+                if (!data || data.length === 0) {
+                    grid.innerHTML = '<p style="text-align:center; color:#94a3b8; grid-column:1/-1;">No games available.</p>';
                     return;
                 }
 
-                games.forEach(game => {
+                grid.innerHTML = '';
+                data.forEach(game => {
                     const card = document.createElement('div');
                     card.className = 'game-card';
                     card.innerHTML = `
@@ -65,17 +68,11 @@
                     grid.appendChild(card);
                 });
             } catch (err) {
-                console.error('Error fetching games:', err.message);
-                grid.innerHTML = `<p style="color: red; text-align: center;">Error: ${err.message}</p>`;
+                grid.innerHTML = `<p style="text-align:center; color:red; grid-column:1/-1;">Error loading games.</p>`;
             }
         }
 
-        function filterCategory(category, btn) {
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            fetchGames();
-        }
-
-        // Initial load
-        fetchGames();
+        loadGames();
     </script>
+</body>
+</html>
