@@ -6,6 +6,8 @@
     <title>Indus110 Gaming Platform</title>
     <!-- Telegram Web App SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { font-family: Arial, sans-serif; background: #0b0f19; color: #fff; margin: 0; padding: 15px; }
         h1 { text-align: center; color: #38bdf8; font-size: 20px; margin-bottom: 10px; }
@@ -29,7 +31,7 @@
     <h1>Indus110 Gaming</h1>
     
     <!-- Telegram User Profile Banner -->
-    <div id="user-profile" class="user-info">Connecting to Telegram...</div>
+    <div id="user-profile" class="user-info">Initializing app...</div>
 
     <!-- Promo Banner -->
     <div class="banner">
@@ -44,30 +46,48 @@
     </div>
 
     <!-- Games Grid Container -->
-    <div id="games-grid">Loading catalog from Supabase...</div>
+    <div id="games-grid">Loading games...</div>
 
-    <!-- Supabase SDK -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        // 1. Telegram WebApp Initialize
-        window.Telegram.WebApp.ready();
-        const tgUser = window.Telegram.WebApp.initDataUnsafe?.user;
-        
-        if (tgUser) {
-            document.getElementById('user-profile').innerHTML = `Welcome, <b>${tgUser.first_name || 'Player'}</b> (@${tgUser.username || 'user'})`;
-        } else {
-            document.getElementById('user-profile').innerHTML = `Welcome, <b>Guest Player</b> (Open via Telegram Bot)`;
+        // 1. Telegram User Initialization safely
+        try {
+            if (window.Telegram && window.Telegram.WebApp) {
+                window.Telegram.WebApp.ready();
+                const tgUser = window.Telegram.WebApp.initDataUnsafe?.user;
+                if (tgUser && tgUser.id) {
+                    document.getElementById('user-profile').innerHTML = `Welcome, <b>${tgUser.first_name || 'Player'}</b>`;
+                } else {
+                    document.getElementById('user-profile').innerHTML = `Welcome, <b>Guest Player</b> (Telegram WebApp)`;
+                }
+            } else {
+                document.getElementById('user-profile').innerHTML = `Welcome, <b>Browser User</b>`;
+            }
+        } catch (e) {
+            document.getElementById('user-profile').innerHTML = `Welcome, <b>Player</b>`;
         }
 
-        // 2. Supabase Credentials (Aapki di gayi keys yahan configured hain)
+        // 2. Supabase Setup & Fetch
         const SUPABASE_URL = 'https://rnmjchixmiyqhciafsfk.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJubWpjaGl4bWl5cWhjaWFmc2ZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA5NTA2MjAsImV4cCI6MjEwNjUyNjYyMH0.C_ics2YhbhaJjFHG38RV_wJROmgfUhLldqGeZdpv76Q';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        let supabaseClient = null;
+        try {
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        } catch (err) {
+            console.error("Supabase init error:", err);
+        }
 
-        // 3. Fetch Games from Supabase with Win Ratio Support
         async function fetchGames(category = 'Hot') {
+            const grid = document.getElementById('games-grid');
+            grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #94a3b8;">Fetching catalog...</p>';
+
+            if (!supabaseClient) {
+                grid.innerHTML = '<p style="color: red; text-align: center;">Database connection failed.</p>';
+                return;
+            }
+
             try {
-                const { data: games, error } = await supabase
+                const { data: games, error } = await supabaseClient
                     .from('games')
                     .select('*')
                     .eq('is_active', true)
@@ -75,7 +95,6 @@
 
                 if (error) throw error;
 
-                const grid = document.getElementById('games-grid');
                 grid.innerHTML = '';
 
                 if (!games || games.length === 0) {
@@ -97,7 +116,7 @@
                 });
             } catch (err) {
                 console.error('Error fetching games:', err.message);
-                document.getElementById('games-grid').innerHTML = '<p style="color: red; text-align: center;">Error loading catalog.</p>';
+                grid.innerHTML = `<p style="color: red; text-align: center;">Error: ${err.message}</p>`;
             }
         }
 
