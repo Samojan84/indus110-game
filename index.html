@@ -73,6 +73,51 @@
         }
 
         loadGames();
-    </script>
+  <!-- Live Winning Toast Container -->
+<div id="live-win-toast" style="position: fixed; bottom: 20px; left: 20px; background: rgba(15, 23, 42, 0.95); border: 1px solid #38bdf8; color: #fff; padding: 10px 14px; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); font-size: 12px; z-index: 9999; display: flex; align-items: center; gap: 10px; max-width: 280px; transform: translateY(150%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); backdrop-filter: blur(5px);">
+    <div style="font-size: 20px;">🎉</div>
+    <div>
+        <div id="toast-title" style="font-weight: bold; color: #38bdf8;">Player 031****44 won</div>
+        <div id="toast-desc" style="color: #cbd5e1; font-size: 11px;">Rs 12,500 in Aviator Spribe</div>
+    </div>
+</div>
+
+<script>
+    // List of simulated recent winners for live excitement
+    const recentWinners = [
+        { user: "Player 030****12", amount: "Rs 85,000", game: "Aviator Spribe" },
+        { user: "Player 031****88", amount: "Rs 14,200", game: "Free Slots" },
+        { user: "Player 033****55", amount: "Rs 45,000", game: "Aviator WG" },
+        { user: "Player 032****99", amount: "Rs 120,000", game: "Grand Mega Jackpot" },
+        { user: "Player 034****77", amount: "Rs 25,500", game: "Chicken Road" },
+        { user: "Player 031****33", amount: "Rs 9,800", game: "Free Slots" }
+    ];
+
+    function showLiveWinToast() {
+        const toast = document.getElementById('live-win-toast');
+        const titleEl = document.getElementById('toast-title');
+        const descEl = document.getElementById('toast-desc');
+
+        // Pick a random winner
+        const randomWin = recentWinners[Math.floor(Math.random() * recentWinners.length)];
+        
+        titleEl.innerHTML = `${randomWin.user} won`;
+        descEl.innerHTML = `<span style="color: #22c55e; font-weight: bold;">${randomWin.amount}</span> in ${randomWin.game}`;
+
+        // Slide in
+        toast.style.transform = 'translateY(0)';
+
+        // Hide after 3.5 seconds
+        setTimeout(() => {
+            toast.style.transform = 'translateY(150%)';
+        }, 3500);
+    }
+
+    // Trigger first toast after 3 seconds, then repeat every 7 seconds
+    setTimeout(() => {
+        showLiveWinToast();
+        setInterval(showLiveWinToast, 7000);
+    }, 3000);
+</script>  </script>
 </body>
 </html>
